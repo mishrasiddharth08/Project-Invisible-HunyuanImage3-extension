@@ -23,7 +23,7 @@ Outputs and detailed metadata: `work/human-quality-2026-10-07/report.json` and t
 
 ## Limits
 
-Initial installation found no compatible weights. They were present for the portrait acceptance above. Base, full Instruct, int8/BF16, editing, rewriting, Spectrum, real sampling interruption and browser/gallery acceptance remain unverified. Mock tests are wiring evidence only.
+Initial installation found no compatible weights. They were present for the portrait acceptance above. Base, full Instruct, int8/BF16, Spectrum and browser/gallery acceptance remain unverified. Later isolated-worker checks below cover partial editing, rewriting, reference slots, sampling cancellation and recovery; editing quality remains unresolved. Mock tests are wiring evidence only.
 
 ## Performance, memory and adapter acceptance
 
@@ -61,3 +61,15 @@ Reproduce with Forge's Python: `tools/test.py`, `tools/check_worker.py`, `tools/
 | 24/32 GB explicit | Not completed | — | Unverified |
 
 The final 16 GB retry failed with an idle GPU baseline of 1.55 GiB; contention alone does not explain this failure. Use Low memory or the tested 12 GB profile while this transfer failure is investigated. Speed/Automatic on the physical 32 GB card passed separately. No physical 8/10/12/16/24 GB card was tested. Smaller VRAM does not remove the roughly 55–58 GiB system RAM requirement.
+
+## Later isolated-worker editing checks — October 7, 2026
+
+On an RTX 5090 with Instruct-Distil W4A8, the matching SigLIP2 vision tower and fp16 VAE, a 1024 x 1024 red-cup reference was edited using seed 72026, eight Euler/Simple steps, CFG 1, guidance 2.5, and Spectrum and rewriting disabled. The requested blue colour appeared, but the image gained excessive contrast and texture. A second colour edit at guidance 1.0 and a keep-unchanged instruction at guidance 2.5 also showed this artifact. Lower guidance is therefore not a demonstrated remedy, and editing quality remains unresolved.
+
+A VAE-only encode/decode roundtrip preserved the source closely (mean absolute pixel difference about 0.66/255), without the excessive texture. This narrows the problem to conditional generation; it does not establish that the model or quantization is responsible.
+
+Nine bundled upstream files were compared semantically with `PedroMarinhoDev/ComfyUI-HunyuanImage3` revision `84ad3a3e2a54472e69e195269729f774b242d120`: nodes, latent format, pipeline, tokenizer, model, model base, loader, operations and VAE matched. The tested safetensors route uses that upstream loader and its supported editing settings. No reproducible implementation difference was identified in those paths. An INT8/BF16 comparison has not been run, so a format-related numerical limitation cannot yet be separated from shared upstream or model behavior.
+
+The current CPU-only suite ran 119 tests: 110 passed and nine optional mapped-GGUF tests were skipped because their `gguf==0.19.0` dependency was unavailable in that test environment. This is not full-model GGUF validation. Functional isolated-worker checks also covered generation, rewriting, reference slots, sampling cancellation and recovery; the three-reference test duplicated one input and does not certify fusion of three distinct images. These checks do not establish full browser acceptance or intermediate latent previews.
+
+The runtime fixes for singleton-frame VAE output and safe hook ownership have retained regressions. No new model downloads, dependency changes or runtime patches were made for the editing-quality diagnosis. The artifact remains an open limitation, not a passing quality claim.

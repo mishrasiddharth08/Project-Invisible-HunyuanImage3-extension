@@ -90,7 +90,7 @@ Hires fix, masks/inpainting, seamless tiling, face restoration, variation seeds,
 
 ## Checks and troubleshooting
 
-See [VALIDATION.md](VALIDATION.md). Three real Instruct-Distil W4A8 human portraits passed Forge API generation, sample saving and metadata checks at 1024 × 1024 and 1024 × 1536. Visual inspection found convincing faces and proportions, with softer finger detail. Other model variants and editing features remain unverified. Missing weights produce a specific file message before allocating model memory. Worker failures are recorded in `logs/worker.log`. File selectors remain hidden to preserve existing saved/API argument positions; ordinary UI selection uses Forge's native controls.
+See [VALIDATION.md](VALIDATION.md). Three real Instruct-Distil W4A8 human portraits passed Forge API generation, sample saving and metadata checks at 1024 × 1024 and 1024 × 1536. Visual inspection found convincing faces and proportions, with softer finger detail. Other model variants remain unverified. Later isolated editing checks produced the requested colour change but also excessive contrast and texture; editing quality remains unresolved. See the later editing checks in VALIDATION.md. Missing weights produce a specific file message before allocating model memory. Worker failures are recorded in `logs/worker.log`. File selectors remain hidden to preserve existing saved/API argument positions; ordinary UI selection uses Forge's native controls.
 
 Run `tools/check_worker.py` with Forge's Python to check the backend without loading weights. Run `tools/test.py` for standalone tests. If installing manually, run `install.py` with Forge's Python; it preserves shared Torch and other Forge packages.
 
