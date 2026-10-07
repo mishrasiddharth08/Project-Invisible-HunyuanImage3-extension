@@ -1,0 +1,11 @@
+Project Invisible HunyuanImage 3.0
+Forge integration Copyright (c) 2026 Siddharth Mishra / Project Invisible contributors.
+Distributed under GPL-3.0; see LICENSE.
+
+Includes unmodified sources from:
+PedroMarinhoDev/ComfyUI-HunyuanImage3, revision 84ad3a3e2a54472e69e195269729f774b242d120.
+comfyanonymous/ComfyUI, revision b26625f23a888367b92153b28d93e159e83e677b.
+Each retains its original copyright and license notices.
+Tencent tokenizer/model-derived code is subject to notices and terms in
+vendor/hunyuan/LICENSE-TENCENT-HUNYUAN and vendor/hunyuan/NOTICE.
+Model weights are not bundled. Their separate license applies to downloads.

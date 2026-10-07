@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+logs/
+work/
+vendor/python/
+*.zip
+research/
+.hunyuan-quant-research/
+*-backups-*/
+*.safetensors
+*.gguf
+*.ckpt
+*.pt
+*.pth

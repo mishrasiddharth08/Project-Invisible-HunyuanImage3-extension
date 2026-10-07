@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="210" viewBox="0 0 1000 210" role="img" aria-labelledby="title desc">
+<title id="title">Project Invisible — HunyuanImage 3.0 for Forge Neo</title>
+<desc id="desc">Native preset, checkpoint and Generate controls connect to an isolated worker and the native gallery. Experimental release, W4A8 generation verified.</desc>
+<rect width="1000" height="210" rx="18" fill="#101827"/>
+<g font-family="Arial,sans-serif" fill="#e8eef8">
+<text x="32" y="45" font-size="26" font-weight="bold">PROJECT INVISIBLE · HunyuanImage 3.0</text>
+<text x="32" y="76" font-size="17" fill="#a8bed5">Forge Neo · Native controls · Isolated worker · Experimental release</text>
+<g font-size="18" text-anchor="middle">
+<rect x="32" y="104" width="160" height="52" rx="10" fill="#22344d"/><text x="112" y="136">UI Preset</text>
+<text x="211" y="136">→</text>
+<rect x="230" y="104" width="175" height="52" rx="10" fill="#22344d"/><text x="317" y="136">Checkpoint</text>
+<text x="424" y="136">→</text>
+<rect x="444" y="104" width="160" height="52" rx="10" fill="#23554d"/><text x="524" y="136">Generate</text>
+<text x="623" y="136">→</text>
+<rect x="643" y="104" width="157" height="52" rx="10" fill="#22344d"/><text x="721" y="136">Worker</text>
+<text x="819" y="136">→</text>
+<rect x="839" y="104" width="130" height="52" rx="10" fill="#22344d"/><text x="904" y="136">Gallery</text>
+</g><text x="32" y="188" font-size="15" fill="#a8bed5">119 tests passed · Real Instruct-Distil W4A8 portraits · Full validation limits documented</text>
+</g></svg>
