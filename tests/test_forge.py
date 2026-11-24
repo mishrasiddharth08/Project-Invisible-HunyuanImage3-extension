@@ -181,6 +181,36 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.runtime.generate.call_count, 3)
         self.assertEqual(self.opts.forge_preset, 'sd')
 
+    def test_selected_script_bypasses_worker_and_preserves_arguments(self):
+        for overrides in (
+            dict(forge_preset='hunyuan3', sd_model_checkpoint=LABEL),
+            dict(forge_preset='hunyuan3'),
+            dict(forge_preset='sd', sd_model_checkpoint=LABEL),
+        ):
+            with self.subTest(overrides=overrides):
+                p = self.request(**overrides)
+                original = Mock(return_value='VEO result')
+                routed = self.forge.wrap(original, runner=True)
+                self.assertEqual(routed(p.scripts, p, 1, 'script option'), 'VEO result')
+                original.assert_called_once_with(p.scripts, p, 1, 'script option')
+        self.runtime.generate.assert_not_called()
+        self.runtime.release.assert_not_called()
+
+    def test_selected_script_can_call_hunyuan_processing(self):
+        p = self.request(forge_preset='hunyuan3', sd_model_checkpoint=LABEL)
+        original = Mock(side_effect=lambda runner, request, *args: self.processing.process_images(request))
+        routed = self.forge.wrap(original, runner=True)
+        self.assertEqual(routed(p.scripts, p, 2), 'worker result')
+        original.assert_called_once_with(p.scripts, p, 2)
+        self.runtime.generate.assert_called_once()
+
+    def test_no_selected_script_still_routes_to_worker(self):
+        p = self.request(forge_preset='hunyuan3', sd_model_checkpoint=LABEL)
+        for selection in (None, 0):
+            with self.subTest(selection=selection):
+                self.assertEqual(self.scripts.ScriptRunner.run(p.scripts, p, selection), 'worker result')
+        self.assertEqual(self.runtime.generate.call_count, 2)
+
     def test_physical_checkpoint_overrides_file_control(self):
         p = self.request(forge_preset='hunyuan3', sd_model_checkpoint='/weights/model.safetensors')
         p.script_args[1] = 'stale model'
@@ -365,6 +395,7 @@ class IntegrationTests(unittest.TestCase):
 
     def test_native_component_refresh_preserves_existing_models(self):
         self.entry.module_list = {'vae.safetensors': '/ordinary/vae.safetensors'}
+        self.entry.module_map = {'vae.safetensors': 'ordinary/vae.safetensors'}
         self.entry.refresh_models = Mock(return_value=(['ordinary'], ['vae.safetensors']))
         self.inventory['vae'] = ['/hunyuan/vae.safetensors']
         self.inventory['vision'] = ['/hunyuan/vision.safetensors']
@@ -377,6 +408,34 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.entry.module_list['vae.safetensors'], '/ordinary/vae.safetensors')
         self.assertIn('/hunyuan/vae.safetensors', modules)
         self.assertEqual(self.entry.module_list['vision.safetensors'], '/hunyuan/vision.safetensors')
+        self.assertEqual(self.entry.module_map['vae.safetensors'], 'ordinary/vae.safetensors')
+        self.assertEqual(self.entry.module_map['vision.safetensors'], 'vision.safetensors')
+        self.assertEqual(self.entry.module_map['/hunyuan/vae.safetensors'], '/hunyuan/vae.safetensors')
+
+    def test_component_refresh_supports_long_name_preset_restore(self):
+        self.entry.module_list = {}
+        self.entry.module_map = {}
+
+        def native_refresh():
+            self.entry.module_list.clear()
+            self.entry.module_map.clear()
+            return ['ordinary'], []
+
+        self.entry.refresh_models = native_refresh
+        self.forge.install_component_refresh()
+        for _ in range(2):
+            _, choices = self.entry.refresh_models()
+            saved = [self.inventory[role][0] for role in ('vae', 'vision', 'head')]
+            restored = [self.entry.module_map[Path(path).name] for path in saved]
+            self.assertTrue(all(value in choices for value in restored))
+            self.assertEqual([self.entry.module_list[value] for value in restored], saved)
+
+    def test_component_refresh_supports_forge_without_module_map(self):
+        self.entry.module_list = {}
+        self.entry.refresh_models = Mock(return_value=([], []))
+        self.forge.install_component_refresh()
+        _, choices = self.entry.refresh_models()
+        self.assertIn('vae.safetensors', choices)
 
 
 if __name__ == '__main__':

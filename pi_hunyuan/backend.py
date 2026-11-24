@@ -108,6 +108,12 @@ class HunyuanBackend:
             cli.args.vram_headroom = self.memory_plan['headroom_gib']
             logging.info('Hunyuan memory profile: %s', self.memory_plan)
             memory = importlib.import_module("comfy.memory_management")
+            if (os.name == 'nt' and self.memory_plan['headroom_gib'] > 0
+                    and self.memory_plan['budget_gib'] > 9.5):
+                # Budgeted Windows workers repeatedly evict large banks. Let
+                # Comfy copy their mapped tensors through its ordinary stream
+                # instead of issuing aimdo HostBuffer file-to-device transfers.
+                memory.read_tensor_file_slice_into = lambda *args, **kwargs: False
             patchers = importlib.import_module("comfy.model_patcher")
             supported = self.mm.is_nvidia() or (
                 self.mm.is_amd() and self.mm.rocm_version >= (7, 14))
@@ -230,7 +236,7 @@ class HunyuanBackend:
             if callable(getattr(module, 'expert_linear', None)) and callable(getattr(module, 'bank_resident', None)) and not getattr(module, 'quant_format', None):
                 # Quantless/GGUF paths can fetch one expert. Avoid staging an
                 # entire BF16 bank on cards with a small working-memory budget.
-                module.bank_resident = lambda _input: nullcontext()
+                module.bank_resident = lambda _input, bank=module: nullcontext(bank)
 
     def _disable_prefetch(self):
         self.model.model_options.setdefault('transformer_options', {})['prefetch_dynamic_vbars'] = False

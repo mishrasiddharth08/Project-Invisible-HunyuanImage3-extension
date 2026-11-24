@@ -9,12 +9,22 @@ ROOT = Path(__file__).resolve().parents[1]
 SKIP = {'.git', '__pycache__', '.pytest_cache', 'logs', 'research', 'work'}
 
 
+def excluded(relative):
+    return (any(item in SKIP or item.startswith('.hunyuan-') or '-backups-' in item for item in relative.parts)
+            or relative.parts[:2] == ('vendor', 'python')
+            or relative.suffix.lower() in {'.safetensors', '.gguf', '.ckpt', '.pt', '.pth'})
+
+
+def install_ignore(directory, names):
+    return [name for name in names if excluded((Path(directory) / name).relative_to(ROOT))]
+
+
 def package():
     destination = ROOT.parent / 'Project-Invisible-HunyuanImage3-Forge-Neo.zip'
     with zipfile.ZipFile(destination, 'w', zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(ROOT.rglob('*')):
             relative = path.relative_to(ROOT)
-            if not path.is_file() or any(item in SKIP or item.startswith('.hunyuan-') or '-backups-' in item for item in relative.parts) or relative.parts[:2] == ('vendor', 'python') or path.suffix.lower() in {'.safetensors', '.gguf', '.ckpt', '.pt', '.pth'}:
+            if not path.is_file() or excluded(relative):
                 continue
             archive.write(path, str(Path(ROOT.name) / relative))
     digest = hashlib.sha256(destination.read_bytes()).hexdigest()
@@ -30,7 +40,7 @@ def deploy():
         raise RuntimeError('The specified Forge Neo installation is missing.')
     if destination.exists():
         raise RuntimeError('Destination already exists; refusing to replace an existing installation.')
-    shutil.copytree(ROOT, destination, ignore=shutil.ignore_patterns(*SKIP))
+    shutil.copytree(ROOT, destination, ignore=install_ignore)
     print('INSTALLED', destination)
 
 

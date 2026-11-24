@@ -86,6 +86,58 @@ class RuntimeTests(unittest.TestCase):
         runtime.release()
         self.assertTrue(worker.closed)
 
+    def test_skip_at_start_sampling_result_and_save_continues_batch(self):
+        for stage in ('startup', 'ready', 'sampling', 'result', 'save'):
+            with self.subTest(stage=stage):
+                runtime.release()
+                self.saved.clear()
+                self.workers.clear()
+                self.state.interrupted = self.state.skipped = False
+                self.state.nextjob.reset_mock()
+                worker_type = runtime.Worker
+                ready, generate = worker_type.wait_ready, worker_type.generate
+                fired = []
+                def trigger():
+                    if not fired:
+                        fired.append(True)
+                        self.state.skipped = True
+                        return True
+                    return False
+                def wait(worker, cancelled):
+                    if stage in ('startup', 'ready') and trigger():
+                        if stage == 'startup':
+                            raise InterruptedError()
+                    return ready(worker, cancelled)
+                def sample(worker, request, cancelled, progress):
+                    if stage == 'sampling' and trigger():
+                        raise InterruptedError()
+                    event = generate(worker, request, cancelled, progress)
+                    if stage == 'result':
+                        trigger()
+                    return event
+                original_stem = Path.stem.fget
+                def stem(path):
+                    if stage == 'save':
+                        trigger()
+                    return original_stem(path)
+                with patch.object(worker_type, 'wait_ready', wait), patch.object(worker_type, 'generate', sample), patch.object(Path, 'stem', property(stem)):
+                    result = runtime.generate(self.p, {'keep_loaded': True})
+                self.assertEqual(result.all_seeds, [43])
+                self.assertEqual([seed for seed, _ in self.saved], [43])
+                self.assertEqual(self.state.nextjob.call_count, 2)
+                self.assertFalse(self.state.skipped)
+                if stage in ('startup', 'ready', 'sampling'):
+                    self.assertTrue(self.workers[0].closed)
+                    self.assertEqual(len(self.workers), 2)
+
+    def test_skip_does_not_override_stop(self):
+        self.state.skipped = True
+        self.state.interrupted = True
+        result = runtime.generate(self.p, {})
+        self.assertEqual(result.images, [])
+        self.assertEqual(self.saved, [])
+        self.state.nextjob.assert_not_called()
+
     def test_late_stop_does_not_save_result(self):
         self.stop_on_result = True
         result = runtime.generate(self.p, {})

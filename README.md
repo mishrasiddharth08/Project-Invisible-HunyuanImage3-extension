@@ -6,7 +6,7 @@ Tencent HunyuanImage 3.0 through Forge Neo's normal **UI Preset â†’ Checkpoint â
 
 No extra page, Forge core edits, ComfyUI server or separate virtual environment. A dedicated process uses Forge's Python and bundled, pinned Comfy model code. Its packages stay in this extension's `vendor/python`. Generate does not download anything. Closing the worker frees its model memory.
 
-**Experimental release:** 119 standalone tests pass. Real image generation is verified only for Instruct-Distil W4A8. The 8/10/12 GB budget simulations passed on RTX 5090; the 16 GB profile currently fails a host-buffer transfer, and explicit 24/32 GB profiles remain unverified. Use Low memory or the tested 12 GB profile for conservative operation. Physical smaller GPUs and full-model GGUF remain unverified. See [VALIDATION.md](VALIDATION.md).
+**Experimental release.** 128 standalone tests pass. Instruct-Distil W4A8 generated real portraits. The 16 GB profile now completes on the RTX 5090 after a Windows transfer fix. Physical smaller cards and full-model GGUF remain unverified. See [validation and measured memory use](VALIDATION.md).
 
 ## Start
 

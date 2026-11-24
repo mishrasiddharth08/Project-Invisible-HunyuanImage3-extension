@@ -48,7 +48,7 @@ The Reddit reference returned HTTP 403. The upstream GitHub source, comparison s
 
 Reproduce with Forge's Python: `tools/test.py`, `tools/check_worker.py`, `tools/check_ui.py`.
 
-## VRAM profile acceptance
+## October VRAM profile acceptance (v0.1.0)
 
 1024-square W4A8 generation on RTX 5090, software budgets only:
 
@@ -60,7 +60,7 @@ Reproduce with Forge's Python: `tools/test.py`, `tools/check_worker.py`, `tools/
 | 16 GB | Failed | — | HostBuffer.read_file_slice failure |
 | 24/32 GB explicit | Not completed | — | Unverified |
 
-The final 16 GB retry failed with an idle GPU baseline of 1.55 GiB; contention alone does not explain this failure. Use Low memory or the tested 12 GB profile while this transfer failure is investigated. Speed/Automatic on the physical 32 GB card passed separately. No physical 8/10/12/16/24 GB card was tested. Smaller VRAM does not remove the roughly 55–58 GiB system RAM requirement.
+The October 16 GB retry failed with an idle GPU baseline of 1.55 GiB; contention alone does not explain this failure. The November fix and retest are documented below. Speed/Automatic on the physical 32 GB card passed separately. No physical 8/10/12/16/24 GB card was tested. Smaller VRAM does not remove the roughly 55–58 GiB system RAM requirement.
 
 ## Later isolated-worker editing checks — October 7, 2026
 
@@ -73,3 +73,17 @@ Nine bundled upstream files were compared semantically with `PedroMarinhoDev/Com
 The current CPU-only suite ran 119 tests: 110 passed and nine optional mapped-GGUF tests were skipped because their `gguf==0.19.0` dependency was unavailable in that test environment. This is not full-model GGUF validation. Functional isolated-worker checks also covered generation, rewriting, reference slots, sampling cancellation and recovery; the three-reference test duplicated one input and does not certify fusion of three distinct images. These checks do not establish full browser acceptance or intermediate latent previews.
 
 The runtime fixes for singleton-frame VAE output and safe hook ownership have retained regressions. No new model downloads, dependency changes or runtime patches were made for the editing-quality diagnosis. The artifact remains an open limitation, not a passing quality claim.
+
+## November 24, 2026 — v0.1.1 fixes
+
+128 standalone checks passed, including a numerical GGUF expert forward with tiled memory handling. The serverless Gradio UI check passed. Skip, script dispatch, component restore and packaging use targeted regression tests.
+
+All three explicit profiles generated and saved nonuniform 1024 × 1024 W4A8 portraits on the RTX 5090. The worker used ordinary mapped-tensor copies for these Windows budgets.
+
+| Profile | Time | Total GPU peak | Worker RAM peak |
+|---|---:|---:|---:|
+| 16 GB | 193.6 s | 25.35 GiB | 72.71 GiB |
+| 24 GB | 147.6 s | 25.18 GiB | 75.00 GiB |
+| 32 GB | 157.8 s | 25.23 GiB | 76.31 GiB |
+
+The GPU was shared. Total-device samples include other applications. These runs verify generation and recovery from the earlier transfer failure. They do not establish fit on physical 16 or 24 GB cards.

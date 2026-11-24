@@ -99,12 +99,24 @@ def generate(p, options):
         output, seeds, prompts, infos = [], [], [], []
         shared.state.job_count = count
         cancelled = lambda: bool(shared.state.interrupted or shared.state.skipped or _cancel.is_set())
+        def skip_current(close_worker=False):
+            global _worker
+            if not shared.state.skipped or shared.state.interrupted or _cancel.is_set():
+                return False
+            if close_worker:
+                worker, _worker = _worker, None
+                if worker:
+                    worker.close()
+            shared.state.skipped = False
+            shared.state.nextjob()
+            return True
         try:
             memory_management.unload_all_models()
             for index in range(count):
                 if shared.state.interrupted or _cancel.is_set():
                     break
-                shared.state.skipped = False
+                if skip_current():
+                    continue
                 prompt = p.prompt[index % len(p.prompt)] if isinstance(p.prompt, list) else p.prompt
                 if getattr(p, 'styles', []):
                     prompt = shared.prompt_styles.apply_styles_to_prompt(prompt, p.styles)
@@ -144,11 +156,15 @@ def generate(p, options):
                     try:
                         worker.wait_ready(cancelled)
                     except (InterruptedError, RuntimeError, OSError):
+                        if skip_current(close_worker=True):
+                            continue
                         if cancelled():
                             break
                         raise
                 worker = _worker
                 if worker is None or cancelled():
+                    if skip_current(close_worker=True):
+                        continue
                     break
                 with tempfile.TemporaryDirectory(prefix='pi-hunyuan3-') as temp:
                     references = []
@@ -165,20 +181,13 @@ def generate(p, options):
                     except (InterruptedError, RuntimeError, OSError):
                         if not cancelled():
                             raise
-                        if shared.state.skipped and not shared.state.interrupted and not _cancel.is_set():
-                            worker, _worker = _worker, None
-                            if worker:
-                                worker.close()
-                            shared.state.skipped = False
-                            shared.state.nextjob()
+                        if skip_current(close_worker=True):
                             continue
                         break
                     with Image.open(request['output']) as loaded:
                         result = loaded.convert('RGB').copy()
                 if cancelled():
-                    if shared.state.skipped and not shared.state.interrupted and not _cancel.is_set():
-                        shared.state.skipped = False
-                        shared.state.nextjob()
+                    if skip_current():
                         continue
                     break
                 if result.size != (p.width, p.height):
@@ -207,6 +216,8 @@ def generate(p, options):
                 info = f'{prompt}\nSteps: {effective_steps}, Sampler: Euler, Schedule type: Simple, CFG scale: {effective_cfg}, {guidance_info}Seed: {seed}, Size: {p.width}x{p.height}, Model: {p.sd_model_name}, VAE: {p.sd_vae_name}, ' + ', '.join(f'{k}: {v}' for k, v in params.items())
                 result.info['parameters'] = info
                 if cancelled():
+                    if skip_current():
+                        continue
                     break
                 if shared.opts.samples_save and not getattr(p, 'do_not_save_samples', False):
                     saved = images.save_image(result, p.outpath_samples, '', seed, prompt, extension=shared.opts.samples_format, info=info, p=p)

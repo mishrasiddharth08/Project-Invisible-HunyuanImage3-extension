@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — November 24, 2026 (experimental)
+
+- Fixed Windows budgeted weight transfers and tiled expert routing.
+- Preserved selected Forge scripts and long-name preset components.
+- Skip continues the batch during worker startup. Manual install and ZIP packaging exclude the same files.
+- 128 standalone tests passed. See VALIDATION.md for GPU results.
+
 ## 0.1.0 — October 7, 2026 (experimental)
 
 - Native HunyuanImage 3.0 preset, checkpoint/component selection, Generate, API and sample saving.

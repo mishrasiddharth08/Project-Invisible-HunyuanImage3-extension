@@ -568,6 +568,10 @@ class MappedGGUFTests(unittest.TestCase):
         model = native.HunyuanImage3MoE(config, dtype=torch.float32, device="cpu", operations=ops)
         q.bind_gguf_model(model, store, ops)
         reference = {name: torch.tensor(gguf.quants.dequantize(t.data, t.tensor_type)) for name, t in store.tensors.items()}
+        from pi_hunyuan.backend import HunyuanBackend
+        backend = SimpleNamespace(memory_plan={'tiled': True}, model=SimpleNamespace(
+            model=SimpleNamespace(diffusion_model=model)))
+        HunyuanBackend._budget_plain_banks(backend)
         x = torch.arange(128, dtype=torch.float32).reshape(1, 4, 32) / 128
         F = torch.nn.functional
         def swiglu(value):

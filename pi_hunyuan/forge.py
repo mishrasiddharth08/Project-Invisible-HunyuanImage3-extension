@@ -145,6 +145,10 @@ def wrap(original, runner=False):
             return original(*args, **kwargs)
         index = 1 if runner else 0
         p = args[index] if len(args) > index else kwargs['p']
+        # Selected scripts own their processing and may call
+        # process_images themselves, where Hunyuan routing still applies.
+        if runner and len(args) > 2 and args[2] not in (None, 0):
+            return original(*args, **kwargs)
         scripts = (args[0] if args else kwargs.get('runner')) if runner else getattr(p, 'scripts', None)
         if active(p):
             if not selected(p):
@@ -294,6 +298,10 @@ def install_component_refresh():
                 if name in main_entry.module_list and identity(main_entry.module_list[name]) != identity(filename):
                     name = filename
                 main_entry.module_list[name] = filename
+                module_map = getattr(main_entry, 'module_map', None)
+                if module_map is not None:
+                    # Long-name preset restore resolves basenames through this map.
+                    module_map.setdefault(name, name)
         return checkpoints, sorted(set(modules) | set(main_entry.module_list))
     setattr(refresh, MARKER, True)
     _set_hook(main_entry, "refresh_models", refresh)
